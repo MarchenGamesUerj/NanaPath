@@ -43,7 +43,7 @@ static void options_init (SDL_Renderer *ren){
 }
 
 static void load_options_textures(SDL_Renderer *ren){
-	options_textures.background = IMG_LoadTexture(ren, "assets/img/game_mode/background_game_mode.png");
+	options_textures.background = IMG_LoadTexture(ren, "assets/img/game_mode/background_game_mode.jpg");
     assert(options_textures.background != NULL);
 	options_textures.logo_options = IMG_LoadTexture(ren, "assets/img/game_mode/logo_game_mode.png");
     assert(options_textures.logo_options != NULL);
