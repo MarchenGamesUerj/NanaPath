@@ -41,6 +41,8 @@ static const int max_xlife_game = 5; //rects do display
 
 static char str_player[] = "Player";
 static char str_rank[] = "Rank:";
+static SDL_Texture *avatar;
+static SDL_Texture *extra_life;
 
 static void hud_init_camps(HudInfo *hud, int player_hp, char *current_rank_name, int player_max_hp, int current_level, int current_xlife);
 static void hud_draw_rects(HudInfo *hud);
@@ -48,8 +50,11 @@ static void hud_update_life (HudInfo *hud, int hp);
 static void hud_update_rank(HudInfo *hud, char *rank_stats, int new_max_hp);
 static void hud_update_extra_life(HudInfo *hud, int number);
 static void hud_data_rects (SDL_Renderer *ren, HudInfo *hud);
+static void hud_load_textures(SDL_Renderer *ren);
+static void hud_destroy_textures();
 
-HudInfo *init_hud (int screen_width, int screen_height, int player_hp, char *current_rank_name, int player_max_hp, int current_level, int current_xlife){
+
+HudInfo *init_hud (SDL_Renderer *ren, int screen_width, int screen_height, int player_hp, char *current_rank_name, int player_max_hp, int current_level, int current_xlife){
 	HudInfo *hud = malloc (sizeof (HudInfo));
 	
 	hud->width = screen_width;
@@ -59,6 +64,7 @@ HudInfo *init_hud (int screen_width, int screen_height, int player_hp, char *cur
 	
 	hud_init_camps(hud, player_hp, current_rank_name, player_max_hp, current_level, current_xlife);
 	hud_draw_rects(hud);
+	hud_load_textures(ren);
 	
 	return hud;
 
@@ -167,14 +173,16 @@ void hud_render (SDL_Renderer *ren, HudInfo *hud){
 	SDL_RenderFillRect(ren, &hud->hud_layout.level_rect);
 	
 	SDL_SetRenderDrawColor(ren, 255,255,255,255);
-	SDL_RenderFillRect(ren, &hud->hud_stats.avatar_player);
+	//SDL_RenderFillRect(ren, &hud->hud_stats.avatar_player);
+	SDL_RenderCopy(ren, avatar, NULL, &hud->hud_stats.avatar_player);
 	SDL_RenderFillRect(ren, &hud->hud_stats.life_bar);
 	font_render_txt (ren, hud->hud_stats.str_name, str_player, tiny_table);
 
 	//SDL_RenderFillRect(ren, &hud->hud_stats.level_number);
 	
 	for(int i=0; i < hud->display_data.qtd_xlife; i++){
-		SDL_RenderFillRect(ren, &hud->hud_stats.extra_life[i]);
+		//SDL_RenderFillRect(ren, &hud->hud_stats.extra_life[i]);
+		SDL_RenderCopy(ren, extra_life, NULL, &hud->hud_stats.extra_life[i]);
 	}
 	font_render_txt (ren, hud->hud_stats.str_rank, str_rank, tiny_table);
 	font_render_txt (ren, hud->hud_stats.str_rank_atual, hud->display_data.str_rank_name, tiny_table);
@@ -186,8 +194,19 @@ void hud_quit(HudInfo *hud){
 	free(hud->hud_stats.str_rank);
 	free(hud->hud_stats.str_name);
 	free(hud);
+	hud_destroy_textures();
 }
 	
+static void hud_load_textures(SDL_Renderer *ren){
+	avatar = IMG_LoadTexture(ren, "assets/img/hud/avatar.jpg");
+    assert(avatar != NULL);
+	extra_life = IMG_LoadTexture(ren, "assets/img/hud/extra_life.png");
+    assert(extra_life != NULL);
+}
+static void hud_destroy_textures(){
+	SDL_DestroyTexture(avatar);
+	SDL_DestroyTexture(extra_life);
+}
 
 static void hud_data_rects (SDL_Renderer *ren, HudInfo *hud){
 	SDL_SetRenderDrawColor(ren, 0, 0, 255, 255);
