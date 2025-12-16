@@ -40,7 +40,7 @@ static void inicial_init (SDL_Renderer *ren){
 }
 
 static void load_inicial_textures(SDL_Renderer *ren){
-	inicial_textures.background_inicial = IMG_LoadTexture(ren, "assets/img/inicial/background_inicial.png");
+	inicial_textures.background_inicial = IMG_LoadTexture(ren, "assets/img/inicial/background_inicial.jpg");
     assert(inicial_textures.background_inicial != NULL);
 	inicial_textures.button_start = IMG_LoadTexture(ren, "assets/img/inicial/button_start.png");
     assert(inicial_textures.button_start != NULL);
@@ -73,9 +73,7 @@ static enum State inicial_handler(SDL_Event* evt, SDL_Renderer* ren){
 				new_state = STATE_QUIT;
 			
 	else if(evt->type == SDL_KEYDOWN){
-		if(evt->type == SDL_KEYDOWN){
 			if (evt->key.keysym.sym == SDLK_SPACE) new_state = STATE_MENU;
-		}
 	}
 	return new_state;
 }
