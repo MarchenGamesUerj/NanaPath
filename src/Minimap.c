@@ -11,6 +11,7 @@ typedef struct{
 
 typedef struct{
     int init;
+	int counter_area;
 
     int w_rect;
     int h_rect;
@@ -24,11 +25,15 @@ typedef struct{
 } InfoState;
 
 typedef struct{
-    //vazio
+    SDL_Texture *player_texture;
+	SDL_Texture *exit_texture;
+	SDL_Texture *treasure_texture;
+	SDL_Texture *rect_texture;
 } MinimapTextures;
 
 static InfoState info_state;
 static MinimapTextures minimap_textures;
+static int aux_apresentacao = 255;
 
 static enum State minimap_handler(SDL_Event* evt, SDL_Renderer* ren);
 static void minimap_load_objects (Point exit, Point treasure);
@@ -36,8 +41,9 @@ static void minimap_set_objects();
 static void minimap_render(SDL_Renderer *ren);
 static void load_minimap_textures(SDL_Renderer *ren);
 
-void minimap_init (int max_levels){
+void minimap_init (int max_levels, SDL_Renderer *ren){
     info_state.init = 1;
+	info_state.counter_area = 0;
     info_state.max_levels = max_levels;
     info_state.control_minimap = malloc(info_state.max_levels * sizeof(int **));
     for (int i = 0; i < info_state.max_levels; i++){
@@ -48,6 +54,7 @@ void minimap_init (int max_levels){
     info_state.obj_list.player_rect  = (SDL_Rect){0,0,0,0};
     info_state.obj_list.exit_rect    = (SDL_Rect){0,0,0,0};
     info_state.obj_list.treasure_rect= (SDL_Rect){0,0,0,0};
+	load_minimap_textures(ren);
 }
 
 int update_minimap(int x, int y){
@@ -68,9 +75,36 @@ int update_minimap(int x, int y){
 
     if (info_state.control_minimap[level][i][j] == 0){
         info_state.control_minimap[level][i][j] = 1;
+		info_state.counter_area++;
+		printf("Nova area descoberta. Contador: %d. \n", info_state.counter_area); //TESTES
         return 1;
     }
     return 0;
+}
+
+static void load_minimap_textures(SDL_Renderer *ren){
+	minimap_textures.player_texture = IMG_LoadTexture(ren, "assets/img/minimap/player.png");
+    assert(minimap_textures.player_texture != NULL);
+	
+	minimap_textures.exit_texture = IMG_LoadTexture(ren, "assets/img/minimap/door.png");
+    assert(minimap_textures.exit_texture != NULL);
+	
+	minimap_textures.treasure_texture = IMG_LoadTexture(ren, "assets/img/minimap/treasure.png");
+    assert(minimap_textures.treasure_texture != NULL);
+	
+	minimap_textures.rect_texture = IMG_LoadTexture(ren, "assets/img/minimap/minimap_wolf.png");
+    assert(minimap_textures.rect_texture != NULL);
+}
+
+void destroy_minimap_textures(){
+	SDL_DestroyTexture(minimap_textures.player_texture);
+	SDL_DestroyTexture(minimap_textures.exit_texture);
+	SDL_DestroyTexture(minimap_textures.treasure_texture);
+	SDL_DestroyTexture(minimap_textures.rect_texture);
+}
+
+int minimap_get_area_counter (){
+	return info_state.counter_area;
 }
 
 void minimap_load_level(int level, int **map, int rows, int cols, Point exit, Point treasure){
@@ -123,6 +157,8 @@ static enum State minimap_handler(SDL_Event* evt, SDL_Renderer* ren) {
 
     else if (evt->type == SDL_KEYDOWN) {
         if (evt->key.keysym.sym == SDLK_d) new_state = STATE_PLAY;
+		else if (evt->key.keysym.sym == SDLK_F5) aux_apresentacao = 150; //teste
+		else if (evt->key.keysym.sym == SDLK_F6) aux_apresentacao = 255; //teste
     }
     return new_state;
 }
@@ -132,45 +168,25 @@ static void minimap_render(SDL_Renderer *ren){
     int rows = info_state.current_rows;
     int level = info_state.current_level;
 
-    SDL_Rect tile;
-    SDL_RenderClear(ren);
-
-    for (int i = 0; i < rows; i++){
-        for (int j = 0; j < cols; j++){
-
-            int x1 = (j * LARGURA_TELA) / cols;
-            int x2 = ((j+1) * LARGURA_TELA) / cols;
-            int y1 = (i * ALTURA_TELA) / rows;
-            int y2 = ((i+1) * ALTURA_TELA) / rows;
-
-            tile.x = x1;
-            tile.y = y1;
-            tile.w = x2 - x1;
-            tile.h = y2 - y1;
-
-            int v = info_state.current_level_map[i][j];
-            if (v == 0) SDL_SetRenderDrawColor(ren,168,145,50,255);
-            else if (v == 2) SDL_SetRenderDrawColor(ren,112,77,49,255);
-            else if (v == 1) SDL_SetRenderDrawColor(ren,50,121,168,255);
-            //else SDL_SetRenderDrawColor(ren,168,145,50,255);
-
-            SDL_RenderFillRect(ren, &tile);
-        }
-    }
-
-    SDL_SetRenderDrawColor(ren, 255,255,255,255);
-    SDL_RenderFillRect(ren, &info_state.obj_list.player_rect);
+    render_map_minimap(ren, info_state.current_level_map, rows, cols, LARGURA_TELA, ALTURA_TELA);
 
     if(info_state.obj_list.exit_rect.w>0){
         SDL_SetRenderDrawColor(ren,255,0,0,255);
         SDL_RenderFillRect(ren, &info_state.obj_list.exit_rect);
+		//SDL_RenderCopy(ren, minimap_textures.exit_texture, NULL, &info_state.obj_list.exit_rect);
     }
 
     if(info_state.obj_list.treasure_rect.w>0){
         SDL_SetRenderDrawColor(ren,0,0,255,255);
         SDL_RenderFillRect(ren, &info_state.obj_list.treasure_rect);
+		//SDL_RenderCopy(ren, minimap_textures.treasure_texture, NULL, &info_state.obj_list.treasure_rect);
     }
+	
+	//SDL_SetRenderDrawColor(ren, 255,255,255,255);
+    //SDL_RenderFillRect(ren, &info_state.obj_list.player_rect);
+	SDL_RenderCopy(ren, minimap_textures.player_texture, NULL, &info_state.obj_list.player_rect);
 
+	SDL_Rect tile;
     for (int i = 0; i < NUM_DIV_Y; i++){
         for (int j = 0; j < NUM_DIV_X; j++){
 
@@ -179,8 +195,9 @@ static void minimap_render(SDL_Renderer *ren){
                 tile.y = i * ALTURA_TELA   / NUM_DIV_Y;
                 tile.w = LARGURA_TELA  / NUM_DIV_X;
                 tile.h = ALTURA_TELA   / NUM_DIV_Y;
-                SDL_SetRenderDrawColor(ren, 0,0,0,150);
+                SDL_SetRenderDrawColor(ren, 0,0,0,aux_apresentacao);
                 SDL_RenderFillRect(ren, &tile);
+				//SDL_RenderCopy(ren, minimap_textures.rect_texture, NULL, &tile);
             }
         }
     }
@@ -192,12 +209,11 @@ void Map_update(SDL_Renderer *ren){
     minimap_render(ren);
 }
 
-void destroy_minimap_textures(){ }
-
 void Minimap_quit(){
     for (int i = 0; i< info_state.max_levels; i++){
         free_grid_int (info_state.control_minimap[i], NUM_DIV_Y);
     }
+	destroy_minimap_textures();
     free(info_state.control_minimap);
     info_state.control_minimap = NULL;
 }
