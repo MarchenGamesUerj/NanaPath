@@ -15,6 +15,7 @@ typedef struct{
 
 typedef struct {
 	int init;
+	enum State play_state; 
 	
 	CamInfo *cam;
 	int rows;
@@ -44,10 +45,10 @@ static void Spread_Player_Updates (Player *player);
 static void play_render(SDL_Renderer *ren);
 static int check_collision_water (SDL_Rect rect, int **map, int rows, int cols, enum DIRECTION_STATE dir);
 static int check_collision_mud (SDL_Rect rect, int **map, int rows, int cols);
-static int check_colision_itens();
-static int check_colision_treasures (SDL_Rect player_rect, int current_level, int max_treasures);
-static int check_colision_droppedItens(DroppedItem **head);
-static int check_colision_exit (SDL_Rect player_rect, SDL_Rect exit_rect);
+static int check_collision_itens();
+static int check_collision_treasures (SDL_Rect player_rect, int current_level, int max_treasures);
+static int check_collision_droppedItens(DroppedItem **head);
+static int check_collision_exit (SDL_Rect player_rect, SDL_Rect exit_rect);
 static void free_DroppedItem_list(DroppedItem *head);
 static int check_drop_spot (DroppedItem *head, int x, int y);
 static int play_pick_drop_spot (Player *player, int **map, DroppedItem *head, Point *pos_item, int rows, int cols);
@@ -58,6 +59,7 @@ static void play_init (SDL_Renderer *ren){
 	info_state.init = 1;
 	info_state.game_mode = options_get_game_mode(); //essa informação precisa vir da Options
 	ItemData_Init(ren); //ISSO TEM QUE SAIR DAQUI
+	info_state.play_state = STATE_PLAY;
 
 	
 	info_state.cam = Camera_Init(LARGURA_TELA, (ALTURA_TELA - HUD_HEIGHT), TILE_SIZE_GAME);
@@ -76,11 +78,12 @@ static void play_init (SDL_Renderer *ren){
 		info_state.control_treasures[i] = -1;
 	info_state.control_treasures[MAX_TREASURES - 1] = MAX_LEVEL - 1;
 	
-	player = create_player();
-	minimap_init (MAX_LEVEL);
-	invent_init (25, 15, 0, LARGURA_TELA, ALTURA_TELA);
-	hud = init_hud (LARGURA_TELA, ALTURA_TELA, get_player_hp(player), get_rank_player_name (player), get_player_max_hp(player), 0, get_player_extra_life(player));
+	player = create_player(ren);
+	minimap_init (MAX_LEVEL, ren);
+	invent_init (ren, 25, 15, 0, LARGURA_TELA, ALTURA_TELA);
+	hud = init_hud (ren, LARGURA_TELA, ALTURA_TELA, get_player_hp(player), get_rank_player_name (player), get_player_max_hp(player), 0, get_player_extra_life(player));
 	Play_init_level(0);
+	map_autotile_init(ren);
 }
 
 static void Play_init_level(int level_index) {
@@ -151,6 +154,13 @@ static enum State play_evt_handler(SDL_Event* evt, SDL_Renderer* ren) {
 		play_init(ren);
 	}
     
+	//mudanca de estado em fc de "evento" interno
+	if (info_state.play_state != STATE_PLAY) {
+		int aux = info_state.play_state;
+		info_state.play_state = STATE_PLAY;
+		return aux;
+	}
+	
 	if(evt->type == SDL_QUIT)
 		new_state = STATE_QUIT;
 	
@@ -158,7 +168,7 @@ static enum State play_evt_handler(SDL_Event* evt, SDL_Renderer* ren) {
 	//eventos que causam mudança de estado
 		if (evt->key.keysym.sym == SDLK_s) new_state = STATE_INVENTORY;
 		else if (evt->key.keysym.sym == SDLK_d) new_state = STATE_MAP;
-		else if (evt->key.keysym.sym == SDLK_SPACE) new_state = STATE_PAUSE;
+		//else if (evt->key.keysym.sym == SDLK_SPACE) new_state = STATE_PAUSE;
 		else if (evt->key.keysym.sym == SDLK_ESCAPE) new_state = STATE_MENU;
 	
 	//eventos que afetam o jogo
@@ -192,10 +202,10 @@ static enum State play_evt_handler(SDL_Event* evt, SDL_Renderer* ren) {
 		update_player_coord(player, terrain, current_dir, info_state.levels_info->rows, info_state.levels_info->cols);
 	}
 	
-	check_colision_itens();
-	check_colision_droppedItens(&info_state.drop_list[info_state.current_level_index]);
-	check_colision_treasures (get_player_rect(player), info_state.current_level_index, MAX_TREASURES);
-	check_colision_exit (get_player_rect(player), info_state.level_objects.exit_rect);
+	check_collision_itens();
+	check_collision_droppedItens(&info_state.drop_list[info_state.current_level_index]);
+	check_collision_treasures (get_player_rect(player), info_state.current_level_index, MAX_TREASURES);
+	check_collision_exit (get_player_rect(player), info_state.level_objects.exit_rect);
 	Spread_Player_Updates (player);
 	
     return new_state;
@@ -206,7 +216,8 @@ static void play_render(SDL_Renderer *ren){
 	int cam_x = Camera_get_viewport_x(info_state.cam);
 	int cam_y = Camera_get_viewport_y(info_state.cam);
 	
-	render_map (ren, info_state.levels_info->map, cam_x, cam_y, TILE_SIZE_GAME, HUD_HEIGHT, info_state.rows, info_state.cols);
+	//render_map (ren, info_state.levels_info->map, cam_x, cam_y, TILE_SIZE_GAME, HUD_HEIGHT, info_state.rows, info_state.cols);
+	autotiling_render_map (ren, info_state.levels_info->map, cam_x, cam_y, TILE_SIZE_GAME, HUD_HEIGHT, info_state.rows, info_state.cols);
 	itens_render(ren, LARGURA_TELA, ALTURA_TELA - HUD_HEIGHT, info_state.current_level_index, info_state.levels_info->qtd_itens, info_state.control_itens, info_state.levels_info->itens, info_state.levels_info->rects_itens, info_state.cam);
 	render_DroppedItens (ren, info_state.cam, info_state.drop_list[info_state.current_level_index]);
 	render_Exit (ren, info_state.cam, info_state.level_objects.exit_rect, info_state.current_level_index, MAX_LEVEL);
@@ -218,6 +229,7 @@ static void play_render(SDL_Renderer *ren){
 }
 
 void Play_update(SDL_Renderer *ren){
+	player_set_idle(player);
 	play_render(ren);
 }
 
@@ -227,6 +239,8 @@ void play_quit(){
 	invent_quit();
 	hud_quit(hud);
 	Minimap_quit();
+	endgame_quit();
+	map_autotile_quit();
 	//ItemDatabase_Quit(); //considerar usar quando tiver texturas
 	
 	free(info_state.seeds);
@@ -249,6 +263,7 @@ void play_quit(){
 	
 	info_state.seeds = NULL;
     info_state.levels_info = NULL;
+	
 }
 
 void play_reset(){
@@ -342,7 +357,7 @@ static void free_DroppedItem_list(DroppedItem *head){
 }
 
 //atualiza control_itens e stats do player
-static int check_colision_itens(){
+static int check_collision_itens(){
 	InfoLevel *level = info_state.levels_info;
     int num = level->qtd_itens;
 
@@ -351,27 +366,33 @@ static int check_colision_itens(){
 			SDL_Rect *item = &level->rects_itens[i];
 			SDL_Rect player_rect = get_player_rect(player);
 			if (SDL_HasIntersection(&player_rect, item)){
+				int type = level->itens[i].type;
+				if (type == T_ARTIFACT && !has_empty_slots()){
+					printf("Inventario esta cheio!\n");
+					return 0;
+				}
+				else{
 					info_state.control_itens[info_state.current_level_index][i] = 1;
 					int item_value = Item_get_value (&level->itens[i]);
 					update_player_score(player, item_value);
 					printf("Player score: %d	|	Item Value: %d	| Type Item: %d		| Id Item: %d \n", get_player_score (player), item_value, level->itens[i].type, level->itens[i].id); //TESTE: TIRAR DEPOIS
-					int type = level->itens[i].type;
-					if (type == T_POTION) update_collected_potions(player);
+					if (type == T_POTION){
+						update_collected_potions(player);
+					}
 					else if (type == T_ARTIFACT){
 						int artifact_id = level->itens[i].id;
-						if(invent_add_item (artifact_id)){
+						if(invent_add_item (artifact_id))
 							update_collected_artifacts(player);
-						}
-						
 					}
 					return 1;
+				}
 			}
 		}
 	}
 	return 0;
 }
 
-static int check_colision_treasures (SDL_Rect player_rect, int current_level, int max_treasures){
+static int check_collision_treasures (SDL_Rect player_rect, int current_level, int max_treasures){
 	
 	if (info_state.level_objects.treasure_rect.w ==0) return 0;
 	
@@ -391,7 +412,7 @@ static int check_colision_treasures (SDL_Rect player_rect, int current_level, in
 	return 0;
 }
 
-static int check_colision_exit (SDL_Rect player_rect, SDL_Rect exit_rect){
+static int check_collision_exit (SDL_Rect player_rect, SDL_Rect exit_rect){
 	if (SDL_HasIntersection(&player_rect, &exit_rect)){
 		//se for a primeira vez, pode incrementar score em 10 pontos
 		if(info_state.current_level_index + 1 < MAX_LEVEL){
@@ -407,7 +428,7 @@ static int check_colision_exit (SDL_Rect player_rect, SDL_Rect exit_rect){
 }
 	
 
-static int check_colision_droppedItens(DroppedItem **head){
+static int check_collision_droppedItens(DroppedItem **head){
 	DroppedItem *aux = *head;
 	DroppedItem *prev = NULL;
 	SDL_Rect player_rect = get_player_rect(player);
@@ -482,6 +503,7 @@ void Game_Update_Player (PlayerMsg *update_msg){
 			
 			Inventory_update_rank (new_tam);*/
 			hud_update_rank_player (hud, get_rank_player_name (player), get_player_max_hp(player), get_player_extra_life(player));
+			invent_update_rank(get_player_tam_invent (player));
 			
 			break;
 		
@@ -496,6 +518,8 @@ void Game_Update_Player (PlayerMsg *update_msg){
 		case PLAYER_VICTORY:
 			//faz o que precisa fazer (animação? Finaliza jogo)
 			printf("Você venceu!\n");
+			info_state.play_state = STATE_END;
+			endgame_display_stats (STATE_HAPPY, get_player_score(player), get_collected_artifacts(player), get_consumed_artifacts(player), get_collected_potions(player), minimap_get_area_counter());
 			break;
 			
 	}
