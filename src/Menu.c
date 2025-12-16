@@ -44,7 +44,7 @@ static void menu_init (SDL_Renderer *ren){
 }
 
 static void load_menu_textures(SDL_Renderer *ren){
-	menu_textures.background = IMG_LoadTexture(ren, "assets/img/menu/background_menu.png");
+	menu_textures.background = IMG_LoadTexture(ren, "assets/img/menu/background_menu.jpg");
     assert(menu_textures.background != NULL);
 	menu_textures.logo_menu = IMG_LoadTexture(ren, "assets/img/menu/logo_menu.png");
     assert(menu_textures.logo_menu != NULL);
