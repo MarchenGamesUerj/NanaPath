@@ -7,6 +7,7 @@
 #include "include/Options.h"
 #include "include/Font_Utils.h"
 #include "include/Inventory.h"
+#include "include/End_Game.h"
 
 SDL_Texture **tiny_table;
 
@@ -18,6 +19,7 @@ int main(void){
                          LARGURA_TELA, ALTURA_TELA, SDL_WINDOW_SHOWN
                       );
     SDL_Renderer* ren = SDL_CreateRenderer(win, -1, 0);
+	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 	TTF_Init();
 	TTF_Font *tiny = TTF_OpenFont("tiny.ttf", 30);
 	assert(tiny != NULL);
@@ -35,7 +37,7 @@ int main(void){
 				case STATE_MENU:		next_state = Menu_next_state (&evt, ren);		break;
 				case STATE_OPTIONS:		next_state = Options_next_state (&evt, ren);	break;
 				case STATE_PLAY:		next_state = Play_next_state(&evt, ren);		break;
-				case STATE_PAUSE:		//next_state = Pause_next_state(&evt, ren);		break;
+				case STATE_END:			next_state = Endgame_next_state (&evt, ren);	break;
 				case STATE_MAP:			next_state = Map_next_state(&evt, ren);			break;
 				case STATE_INVENTORY:	next_state = Invent_next_state(&evt, ren);		break;
 			}
@@ -48,9 +50,9 @@ int main(void){
 				case STATE_MENU:		Menu_update (ren);		break;
 				case STATE_OPTIONS:		Options_update (ren);	break;
 				case STATE_PLAY:		Play_update(ren);		break;
-				case STATE_PAUSE:		//next_state = Pause_update(ren);		break;
-				case STATE_MAP:			Map_update(ren);			break;
-				case STATE_INVENTORY:	Inventory_update(ren);		break;
+				case STATE_END:			Endgame_update(ren);	break;
+				case STATE_MAP:			Map_update(ren);		break;
+				case STATE_INVENTORY:	Inventory_update(ren);	break;
 			}
 		}
 		if (state_ == STATE_QUIT) break;
@@ -59,7 +61,7 @@ int main(void){
 	if (STATE_QUIT){ //temporario
 		destroy_menu_textures();
 		destroy_inicial_textures();
-		Minimap_quit();
+		destroy_itens_textures();
 	}
 	
 	font_destroy_table(tiny_table);
