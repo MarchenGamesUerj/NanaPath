@@ -36,12 +36,16 @@ static int ItemData_get_value (int type, int id);
 static void Item_update_flag (int id_artifact);
 static void potions_render (SDL_Renderer *ren, int id, SDL_Rect *screen_rect);
 static void artifacts_render (SDL_Renderer *ren, int id, SDL_Rect *screen_rect);
+static void load_itens_textures(SDL_Renderer *ren);
 
 
 static ItemInfo potions_type[5];
 static ItemInfo artifacts_type[8];
 static SDL_Texture *potions_textures[5];
-static SDL_Texture *artifacts_textures[8];
+//static SDL_Texture *artifacts_textures[8];
+static SDL_Texture *artifacts_texture;
+static SDL_Texture *treasure_texture;
+static SDL_Texture *exit_texture;
 
 static void potions_init(){
 	int *rand_number = shuffle_numbers(5);
@@ -128,7 +132,7 @@ static void artifacts_init(){
         .id = 0,
         .name = "Item 1",
         .value = 2,
-        .Texture = artifacts_textures[0],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Duration_Params = { .on = 0, .speed_bonus = 5, .duration = 10 }
     };
@@ -138,7 +142,7 @@ static void artifacts_init(){
         .id = 1,
         .name = "Item 2",
         .value = 5,
-        .Texture = artifacts_textures[1],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Reveal_Params = { .num_parts_revealed = 5 }
     };
@@ -148,7 +152,7 @@ static void artifacts_init(){
         .id = 2,
         .name = "Item 3",
         .value = 5,
-        .Texture = artifacts_textures[2],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Life_Params = { .extra_life = 1 }
     };
@@ -158,7 +162,7 @@ static void artifacts_init(){
         .id = 3,
         .name = "Item 4",
         .value = 5,
-        .Texture = artifacts_textures[3],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Duration_Params = { .on = 0, .speed_bonus = 0, .duration = 10 }
     };
@@ -168,7 +172,7 @@ static void artifacts_init(){
         .id = 4,
         .name = "Item 5",
         .value = 5,
-        .Texture = artifacts_textures[4],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Duration_Params = { .on = 0, .speed_bonus = 0, .duration = 10 }
     };
@@ -178,7 +182,7 @@ static void artifacts_init(){
         .id = 5,
         .name = "Item 6",
         .value = 5,
-        .Texture = artifacts_textures[5],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Reveal_Params = { .num_parts_revealed = 0 } //não precisa desse campo
     };
@@ -188,7 +192,7 @@ static void artifacts_init(){
         .id = 6,
         .name = "Item 7",
         .value = 5,
-        .Texture = artifacts_textures[6],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Reveal_Params = { .num_parts_revealed = 0 } //não precisa desse campo
     };
@@ -198,25 +202,44 @@ static void artifacts_init(){
         .id = 7,
         .name = "Item 8",
         .value = 5,
-        .Texture = artifacts_textures[7],
+        .Texture = artifacts_texture,
 		.already_opened = 0,
         .Life_Params = { .extra_life = 0 } //não precisa desse campo
     };
 }
 
 void ItemData_Init(SDL_Renderer *ren) {
-	/*
-	if (potions_textures[0] == NULL) {
-    potions_textures[0] = IMG_LoadTexture(ren, "assets/img/potion_hp.png");
-    potions_textures[1] = IMG_LoadTexture(ren, "assets/img/potion_speed.png");
-    // ...
-    
-    artifacts_textures[0] = IMG_LoadTexture(ren, "assets/img/boot.png");
-	}
-    // ... */
-
+	load_itens_textures(ren);
     potions_init();
     artifacts_init();
+}
+
+static void load_itens_textures(SDL_Renderer *ren){
+	potions_textures[0] = IMG_LoadTexture(ren, "assets/img/itens/potion_green.png");
+    assert(potions_textures[0] != NULL);
+	potions_textures[1] = IMG_LoadTexture(ren, "assets/img/itens/potion_red.png");
+    assert(potions_textures[1] != NULL);
+	potions_textures[2] = IMG_LoadTexture(ren, "assets/img/itens/potion_pink.png");
+    assert(potions_textures[2] != NULL);
+	potions_textures[3] = IMG_LoadTexture(ren, "assets/img/itens/potion_orange.png");
+    assert(potions_textures[3] != NULL);
+	potions_textures[4] = IMG_LoadTexture(ren, "assets/img/itens/potion_blue.png");
+    assert(potions_textures[4] != NULL);
+	
+	artifacts_texture = IMG_LoadTexture(ren, "assets/img/itens/chest.png");
+    assert(artifacts_texture != NULL);
+	treasure_texture = IMG_LoadTexture(ren, "assets/img/itens/chest1.png");
+    assert(artifacts_texture != NULL);
+	exit_texture = IMG_LoadTexture(ren, "assets/img/itens/door.png");
+    assert(exit_texture != NULL);
+
+}
+
+void destroy_itens_textures(){
+	for (int i=0; i<5; i++){
+		SDL_DestroyTexture(potions_textures[i]);
+	}
+	SDL_DestroyTexture(artifacts_texture);
 }
 
 static int ItemData_get_value (int type, int id){
@@ -250,16 +273,11 @@ ItemInfo* ItemDatabase_GetArtifactInfo(int id) {
 }
 
 SDL_Texture* ItemDatabase_GetArtifactTexture(int id) {
-    return artifacts_textures[id];
+    return artifacts_texture;
 }
 
 void ItemDatabase_Quit() {
-    for (int i = 0; i < 5; i++) {
-        SDL_DestroyTexture(potions_textures[i]);
-    }
-    for (int i = 0; i < 8; i++) {
-        SDL_DestroyTexture(artifacts_textures[i]);
-    }
+    
 }
 
 int Item_get_value (ItemBlock *item){
@@ -321,57 +339,29 @@ void render_Exit (SDL_Renderer *ren, CamInfo *cam, SDL_Rect exit_rect, int curre
 	if (current_level != (max_levels - 1)){
 		SDL_Rect exit_screen_pos;
 		Camera_Apply_Rect(cam, &exit_rect, &exit_screen_pos);
-		SDL_SetRenderDrawColor(ren, 255, 0, 0, 255); //pinta a saída de vermelho (testes)
-		SDL_RenderFillRect(ren, &exit_screen_pos);
+		//SDL_SetRenderDrawColor(ren, 255, 0, 0, 255); //pinta a saída de vermelho (testes)
+		//SDL_RenderFillRect(ren, &exit_screen_pos);
+		SDL_RenderCopy(ren, exit_texture, NULL, &exit_screen_pos);
 	}
 }
 
 void render_Treasure (SDL_Renderer *ren, CamInfo *cam, SDL_Rect treasure_rect){
 	SDL_Rect treasure_screen_pos;
 	Camera_Apply_Rect(cam, &treasure_rect, &treasure_screen_pos);
-	SDL_SetRenderDrawColor(ren, 111, 66, 245, 255);
-	SDL_RenderFillRect(ren, &treasure_screen_pos);
+	//SDL_SetRenderDrawColor(ren, 111, 66, 245, 255);
+	//SDL_RenderFillRect(ren, &treasure_screen_pos);
+	SDL_RenderCopy(ren, treasure_texture, NULL, &treasure_screen_pos);
 }
 
 static void potions_render (SDL_Renderer *ren, int id, SDL_Rect *screen_rect){
-    /*
-    switch(id){
-        case 0:
-			break;
-		case 1:
-			break;
-		case 2:
-			break;
-		case 3:
-			break;
-		case 4:
-			break;
-    }*/
-	SDL_SetRenderDrawColor(ren, 252, 3, 240, 255); //pinta todas as poções com rosa (testes)
-    SDL_RenderFillRect(ren, screen_rect);
+    SDL_RenderCopy(ren, potions_textures[id], NULL, screen_rect);
+	/*SDL_SetRenderDrawColor(ren, 252, 3, 240, 255); //pinta todas as poções com rosa (testes)
+    SDL_RenderFillRect(ren, screen_rect);*/
 }
 
 static void artifacts_render (SDL_Renderer *ren, int id, SDL_Rect *screen_rect){
-    /*
-    switch(id){
-        case 0:
-			break;
-		case 1:
-			break;
-		case 2:
-			break;
-		case 3:
-			break;
-		case 4:
-			break;
-		case 5:
-			break;
-		case 6:
-			break;
-		case 7:
-			break;
-    }*/
-    SDL_SetRenderDrawColor(ren, 3, 198, 252, 255); //pinta todas as poções com azul claro (testes)
-    SDL_RenderFillRect(ren, screen_rect);
+	SDL_RenderCopy(ren, artifacts_texture, NULL, screen_rect);
+    /*SDL_SetRenderDrawColor(ren, 3, 198, 252, 255); //pinta todas as poções com azul claro (testes)
+    SDL_RenderFillRect(ren, screen_rect);*/
 }
 
