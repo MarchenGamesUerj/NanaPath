@@ -1,6 +1,4 @@
 #include "include/Inventory.h"
-#include "include/Play.h" //notificar open/drop de item 
-
 #define MENU_ROWS 3
 #define MENU_COLS 2
 
@@ -53,6 +51,7 @@ static const TextStyle menu_style = { .width = 4*gap_between, .height = 6*gap_be
 static enum InternalState internal_state_ = ABRIR;
 static InventState *invent; //1 inventário para o jogo inteiro
 static int control_render[3][2];
+static SDL_Texture *icon_menu;
 
 static enum State inventory_evt_handler(SDL_Event* evt, SDL_Renderer* ren);
 static void invent_draw_rects(int screen_width, int screen_height);
@@ -65,10 +64,12 @@ static int invent_get_content_array (int logic_index);
 static int invent_check_index(int logic_index);
 static void select_content_menu (int select_x, int max);
 static void inventory_render(SDL_Renderer *ren);
+static void invent_load_texture(SDL_Renderer *ren);
+static void invent_destroy_texture();
 
-
-void invent_init (int max_tam, int tam_atual, int current_level_index, int screen_width, int screen_height){
+void invent_init (SDL_Renderer *ren, int max_tam, int tam_atual, int current_level_index, int screen_width, int screen_height){
 	invent = malloc (sizeof(InventState));
+	invent_load_texture(ren);
 	
 	invent->init = 1;
 	invent->max_tam = max_tam;
@@ -155,6 +156,10 @@ void invent_update_rank(int new_tam){
 	invent->tam_atual = new_tam;
 	invent->empty_slots = invent->tam_atual - qtd_itens;
 	printf("Inventario aumentou de tamanho! Tamanho atual: %d \n", new_tam);
+}
+
+int has_empty_slots(){
+	return (invent->empty_slots > 0);
 }
 
 enum State Invent_next_state (SDL_Event *evt, SDL_Renderer *ren){
@@ -301,7 +306,13 @@ static void select_content_menu (int select_index, int max){
     }
 }
 
-
+static void invent_load_texture(SDL_Renderer *ren){
+	icon_menu = IMG_LoadTexture(ren, "assets/img/invent/gift_icon.png");
+    assert(icon_menu != NULL);
+}
+static void invent_destroy_texture(){
+	SDL_DestroyTexture(icon_menu);
+}
 	
 void invent_update_new_tam (int new_tam){
 	if (new_tam > invent->max_tam){
@@ -354,6 +365,7 @@ void invent_quit(){
 	
 	free(invent->layout.txt_rect.str_open_mode);
 	free(invent->layout.txt_rect.str_drop_mode);
+	invent_destroy_texture();
 	
 	free(invent);
 	invent = NULL;
@@ -378,7 +390,8 @@ static void inventory_render(SDL_Renderer *ren){
 			int str_status = control_render[i][j];
 			
 			if (str_status == -2){ //flag = 0
-				SDL_RenderFillRect(ren, &invent->layout.matriz_menu_itens[i][j]);
+				//SDL_RenderFillRect(ren, &invent->layout.matriz_menu_itens[i][j]);
+				SDL_RenderCopy(ren, icon_menu, NULL, &invent->layout.matriz_menu_itens[i][j]);
 				font_render_txt (ren, invent->layout.txt_rect.str_itens_menu[i][j], "??????", tiny_table);
 			}
 			else if (str_status == -1){
@@ -386,7 +399,8 @@ static void inventory_render(SDL_Renderer *ren){
 			}
 			else{ //flag = id
 				char *str_name_item = Item_get_artifact_name(str_status);
-				SDL_RenderFillRect(ren, &invent->layout.matriz_menu_itens[i][j]);
+				//SDL_RenderFillRect(ren, &invent->layout.matriz_menu_itens[i][j]);
+				SDL_RenderCopy(ren, icon_menu, NULL, &invent->layout.matriz_menu_itens[i][j]);
 				font_render_txt (ren, invent->layout.txt_rect.str_itens_menu[i][j], str_name_item, tiny_table);
 			}
 		}
